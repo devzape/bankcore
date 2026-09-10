@@ -2,7 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
+from app.core.limiter import limiter
+limiter.enabled = False
 from app.main import app
 from app.database import Base, get_db
 
@@ -33,3 +34,13 @@ def setup_and_teardown_db():
 @pytest.fixture()
 def client():
     return TestClient(app)
+
+@pytest.fixture()
+def auth_headers(client):
+    client.post("/auth/register", json={"email": "user@test.com", "password": "testpass123"})
+    response = client.post(
+        "/auth/token",
+        data={"username": "user@test.com", "password": "testpass123"},
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
