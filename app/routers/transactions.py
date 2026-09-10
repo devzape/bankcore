@@ -7,8 +7,8 @@ from app.models.transaction import Transaction, Movement
 from app.models.user import User
 from app.schemas.transaction import TransferCreate, TransactionResponse
 from app.core.deps import get_current_user
-
 from app.schemas.transaction import DepositCreate
+from app.core.audit import log_action
 
 router = APIRouter(prefix="/transactions", tags=["Transacciones"])
 
@@ -61,6 +61,14 @@ def transfer(
         transaction_id=new_transaction.id,
     )
     db.add_all([debit, credit])
+    db.add_all([debit, credit])
+
+    log_action(
+        db,
+        action="TRANSFER",
+        detail=f"{data.amount} de cuenta {from_account.id} a cuenta {to_account.id}",
+        user_id=current_user.id,
+    )
 
     db.commit()
     db.refresh(new_transaction)
@@ -96,6 +104,12 @@ def deposit(
         transaction_id=new_transaction.id,
     )
     db.add(credit)
+    log_action(
+        db,
+        action="DEPOSIT",
+        detail=f"{data.amount} en cuenta {account.id}",
+        user_id=current_user.id,
+    )
 
     db.commit()
     db.refresh(new_transaction)

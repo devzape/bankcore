@@ -1,19 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
 from app.core.security import hash_password
-
 from fastapi.security import OAuth2PasswordRequestForm
-
 from app.schemas.user import Token
 from app.core.security import verify_password, create_access_token
-
 from app.core.deps import get_current_user
-
-
+from app.core.audit import log_action
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 
@@ -43,7 +38,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Usuario inactivo")
-
+   
+    log_action(db, action="LOGIN", detail=f"Login exitoso: {user.email}", user_id=user.id)
+    db.commit()
     access_token = create_access_token(data={"sub": user.email, "role": user.role})
     return Token(access_token=access_token)
 
