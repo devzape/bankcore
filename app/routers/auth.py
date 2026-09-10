@@ -9,6 +9,9 @@ from app.schemas.user import Token
 from app.core.security import verify_password, create_access_token
 from app.core.deps import get_current_user
 from app.core.audit import log_action
+from fastapi import Request
+from app.core.limiter import limiter
+
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 
@@ -30,7 +33,8 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
