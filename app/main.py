@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from app.database import Base, engine
-from app.routers import auth
 import app.models
-from app.routers import auth, accounts
+from app.routers import auth, accounts, transactions
 
 Base.metadata.create_all(bind=engine)
 
@@ -13,11 +12,5 @@ app = FastAPI(
 )
 
 app.include_router(auth.router)
-
-
-@app.get("/")
-def health_check():
-    return {"status": "ok", "service": "BankCore"}
-
-app.include_router(auth.router)
 app.include_router(accounts.router)
+app.include_router(transactions.router)
