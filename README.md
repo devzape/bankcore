@@ -1,3 +1,4 @@
+[![Tests](https://github.com/devzape/bankcore/actions/workflows/tests.yml/badge.svg)](https://github.com/devzape/bankcore/actions/workflows/tests.yml)
 # 🏦 BankCore
 
 Motor de cuentas y transacciones estilo fintech, construido con **FastAPI** y **SQLAlchemy**. Simula el corazón de un sistema bancario real: cuentas, transferencias con doble entrada contable, auditoría inmutable, control de acceso por roles, y protección contra fuerza bruta.
