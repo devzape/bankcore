@@ -1,46 +1,62 @@
-[![Tests](https://github.com/devzape/bankcore/actions/workflows/tests.yml/badge.svg)](https://github.com/devzape/bankcore/actions/workflows/tests.yml) 🔗 **[Probar la API en vivo](https://bankcore-sbdu.onrender.com/docs)**
 # 🏦 BankCore
 
-Motor de cuentas y transacciones estilo fintech, construido con **FastAPI** y **SQLAlchemy**. Simula el corazón de un sistema bancario real: cuentas, transferencias con doble entrada contable, auditoría inmutable, control de acceso por roles, y protección contra fuerza bruta.
+Fintech-style accounts and transactions engine built with **FastAPI** and **SQLAlchemy**. It simulates the core of a real banking system: accounts, double-entry transfers, immutable audit logging, role-based access control and brute-force protection.
 
-No es un CRUD más — está pensado para reflejar decisiones de diseño que se esperan en sistemas financieros reales.
+It's not just another CRUD: it's designed around the kind of decisions you'd expect in real financial systems.
 
----
+[![Tests](https://github.com/devzape/bankcore/actions/workflows/tests.yml/badge.svg)](https://github.com/devzape/bankcore/actions/workflows/tests.yml)
 
-## 🛠️ Tecnologías utilizadas
+🔗 **[Try the live API (Swagger)](https://bankcore-sbdu.onrender.com/docs)**
 
-- **FastAPI**: framework para construir la API.
-- **SQLAlchemy**: ORM para persistencia en SQLite.
-- **Pydantic**: validación y tipado de esquemas.
-- **JWT (python-jose)**: autenticación basada en tokens.
-- **Passlib + bcrypt**: hasheo seguro de contraseñas.
-- **SlowAPI**: rate limiting contra ataques de fuerza bruta.
-- **Pytest**: suite de tests automatizados (11 tests, cubriendo auth, cuentas y transferencias).
+> **Note on the demo:** it runs on a free tier, so the first request can take ~20 seconds while the service wakes up. Demo data may be reset periodically.
+
+<!-- Add a short GIF or screenshot of Swagger here (login + transfer) -->
 
 ---
 
-## ✨ Funcionalidades principales
+## 🛠️ Tech stack
 
-- **Autenticación JWT** con roles (`user` / `admin`).
-- **Cuentas múltiples por usuario**, con control de acceso estricto (protección contra IDOR: nadie puede ver ni operar cuentas ajenas).
-- **Transferencias con doble entrada contable**: cada movimiento de dinero genera dos registros (débito/crédito), nunca se edita un saldo "a mano" sin dejar rastro.
-- **Bloqueo de filas (`row locking`)** en operaciones de saldo, para prevenir condiciones de carrera en transferencias simultáneas.
-- **Log de auditoría inmutable**: cada login, depósito, transferencia y cambio administrativo queda registrado con usuario, detalle y timestamp.
-- **Rate limiting** en el login (5 intentos/minuto) para frenar fuerza bruta.
-- **Panel de administración**: ver todas las cuentas/transacciones del sistema, congelar y descongelar cuentas.
+- **FastAPI**: API framework.
+- **SQLAlchemy**: ORM (SQLite).
+- **Pydantic**: schema validation and typing.
+- **JWT (python-jose)**: token-based authentication.
+- **Passlib + bcrypt**: secure password hashing.
+- **SlowAPI**: rate limiting against brute-force attacks.
+- **Pytest**: automated test suite (11 tests covering auth, accounts and transfers).
+- **Docker** + **GitHub Actions**: containerization and CI (tests on every push).
+- **Render**: live deployment.
 
 ---
 
-## ⚙️ Cómo correr el proyecto localmente
+## ✨ Key features
 
-1. **Clonar el repositorio:**
+- **JWT authentication** with roles (`user` / `admin`).
+- **Multiple accounts per user**, with strict access control (IDOR protection: nobody can view or operate on someone else's accounts).
+- **Double-entry transfers**: every money movement creates two records (debit/credit); a balance is never edited "by hand" without leaving a trace.
+- **Row locking** on balance operations to prevent race conditions in concurrent transfers. *(Row-level locks are effective on PostgreSQL; on SQLite, writes are serialized at the database level.)*
+- **Immutable audit log**: every login, deposit, transfer and administrative change is recorded with user, details and timestamp.
+- **Rate limiting** on login (5 attempts/minute) to stop brute force.
+- **Admin panel**: view every account and transaction in the system, freeze and unfreeze accounts.
+
+<!--
+## 🧪 Demo user
+Email: [demo email]
+Password: [demo password]
+(Regular `user` role only. Never publish admin credentials.)
+-->
+
+---
+
+## ⚙️ Running locally
+
+1. **Clone the repository:**
 
 ```bash
 git clone https://github.com/devzape/bankcore.git
 cd bankcore
 ```
 
-2. **Crear y activar un entorno virtual:**
+2. **Create and activate a virtual environment:**
 
 ```bash
 python -m venv venv
@@ -48,65 +64,78 @@ venv\Scripts\Activate.ps1      # Windows (PowerShell)
 source venv/bin/activate       # Mac/Linux
 ```
 
-3. **Instalar dependencias:**
+3. **Install dependencies:**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Crear el archivo `.env`** en la raíz, con una clave secreta propia:
+4. **Create a `.env` file** in the project root with your own secret key:
 
 ```bash
 python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32))" > .env
 ```
 
-5. **Levantar el servidor:**
+5. **Start the server:**
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-La API queda disponible en `http://127.0.0.1:8000`, con documentación interactiva (Swagger) en `http://127.0.0.1:8000/docs`.
+The API is available at `http://127.0.0.1:8000`, with interactive docs (Swagger) at `http://127.0.0.1:8000/docs`.
+
+### 🐳 Running with Docker
+
+```bash
+docker build -t bankcore .
+docker run -p 8000:8000 --env-file .env bankcore
+```
 
 ---
 
-## ✅ Correr los tests
+## ✅ Running the tests
 
 ```bash
 pytest -v
 ```
 
-Los tests usan una base de datos SQLite separada (`test_bankcore.db`), que se crea y destruye automáticamente en cada test — no afectan los datos de la base real.
+Tests use a separate SQLite database (`test_bankcore.db`) that is created and destroyed automatically for each test, so real data is never affected. The same suite runs on every push through **GitHub Actions**.
 
 ---
 
-## 📂 Estructura del proyecto
+## 📂 Project structure
 
 ```
 bankcore/
 ├── app/
-│   ├── main.py              # arranca la app, conecta routers y middleware
-│   ├── database.py          # configuración de SQLAlchemy
-│   ├── models/               # User, Account, Transaction, Movement, AuditLog
-│   ├── schemas/               # esquemas Pydantic de entrada/salida
-│   ├── routers/               # auth, accounts, transactions, admin
-│   └── core/                  # seguridad, JWT, dependencias, rate limiter, auditoría
-├── tests/                     # suite de pytest
+│   ├── main.py              # starts the app, wires routers and middleware
+│   ├── database.py          # SQLAlchemy configuration
+│   ├── models/              # User, Account, Transaction, Movement, AuditLog
+│   ├── schemas/             # Pydantic input/output schemas
+│   ├── routers/             # auth, accounts, transactions, admin
+│   └── core/                # security, JWT, dependencies, rate limiter, auditing
+├── tests/                   # pytest suite
 ├── requirements.txt
-└── API_CONTRACT.md            # documentación detallada de todos los endpoints
+└── API_CONTRACT.md          # detailed documentation of every endpoint
 ```
 
 ---
 
-## 📖 Documentación de la API
+## 📖 API documentation
 
-Ver [`API_CONTRACT.md`](./API_CONTRACT.md) para el detalle completo de cada endpoint, con ejemplos de request/response.
+See [`API_CONTRACT.md`](./API_CONTRACT.md) for the full detail of each endpoint, with request/response examples.
 
 ---
 
-## 🔐 Decisiones de seguridad destacadas
+## 🔐 Security decisions
 
-- Las contraseñas nunca se guardan en texto plano (bcrypt).
-- El mensaje de error de login es idéntico si el email no existe o si la contraseña es incorrecta, para evitar enumeración de usuarios.
-- Toda consulta de cuentas filtra por dueño **en la base de datos**, no en el código — evita fugas de datos por errores de lógica.
-- El log de auditoría es append-only: no hay ningún endpoint que permita editrarlo o borrarlo.
+- Passwords are never stored in plain text (bcrypt).
+- The login error message is identical whether the email doesn't exist or the password is wrong, to prevent user enumeration.
+- Every account query filters by owner **at the database level**, not in application code, which prevents data leaks caused by logic errors.
+- The audit log is append-only: there is no endpoint that allows editing or deleting it.
+
+---
+
+## 👤 Author
+
+**Benjamin Morales**: [GitHub](https://github.com/devzape) · [LinkedIn](https://www.linkedin.com/in/benjamin-morales-186231428/)
